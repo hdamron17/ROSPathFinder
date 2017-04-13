@@ -83,7 +83,7 @@ class PathFinder():
         Finds optimal path from start_xy to stop_xy
         '''
         frontier = queue.PriorityQueue()
-        for neighbor_path in Path([start_xy]).neighbors(self.im.size): frontier.put(neighbor_path)
+        for neighbor_path in PathNode(start_xy, stop_xy).neighbors(self.im.size): frontier.put(neighbor_path)
         print(frontier.qsize()) #TODO remove
 
         path = None
@@ -96,6 +96,7 @@ class PathFinder():
                 path = best
             else:
                 for neighbor_path in best.neighbors(self.im.size):
+                    self.put_point(neighbor_path.frontier())
                     frontier.put(neighbor_path)
 
 def cost_guess(point_xy, stop_xy):
@@ -115,10 +116,10 @@ class PathNode():
         self.prev = prev
         self.xy = location
         self.endpoint = endpoint
-        self.length = prev.length() if prev != None else 0
+        self.length = prev.prev_dist() + 1 if prev != None else 1
 
     def __cmp__(self, other):
-        return cmp(self.cost()
+        return cmp(self.cost(), other.cost())
 
     def prev_dist(self):
         return self.length
@@ -148,10 +149,10 @@ class PathNode():
         x, y = self.frontier()
         ret = [] #list of index xy tuples beside the xy input
 
-        if x+1 < len_x: ret.append(Path((x+1, y), self.endpoint, prev=self))
-        if x-1 >= 0: ret.append(Path((x-1, y), self.endpoint, prev=self))
-        if x+1 < len_x: ret.append(Path((x, y+1), self.endpoint, prev=self))
-        if x-1 >= 0: ret.append(Path((x, y-1), self.endpoint, prev=self))
+        if x+1 < len_x: ret.append(PathNode((x+1, y), self.endpoint, prev=self))
+        if x-1 >= 0: ret.append(PathNode((x-1, y), self.endpoint, prev=self))
+        if x+1 < len_x: ret.append(PathNode((x, y+1), self.endpoint, prev=self))
+        if x-1 >= 0: ret.append(PathNode((x, y-1), self.endpoint, prev=self))
 
         return ret
 
