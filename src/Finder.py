@@ -83,7 +83,12 @@ class PathFinder():
         Finds optimal path from start_xy to stop_xy
         '''
         frontier = queue.PriorityQueue()
-        for neighbor_path in PathNode(start_xy, stop_xy).neighbors(self.im.size): frontier.put(neighbor_path)
+        start = PathNode(start_xy, stop_xy)
+        neighbors = start.neighbors(self.im.size)
+        for neighbor_path in neighbors:
+            print("Putting %s" % (neighbor_path.frontier(),)) #TODO remove
+            frontier.put(neighbor_path)
+            print("Done")
         print(frontier.qsize()) #TODO remove
 
         path = None
@@ -96,8 +101,9 @@ class PathFinder():
                 path = best
             else:
                 for neighbor_path in best.neighbors(self.im.size):
-                    self.put_point(neighbor_path.frontier())
-                    frontier.put(neighbor_path)
+                    if self.im[neighbor_path.frontier()] == EXPLORED:
+                        self.put_point(neighbor_path.frontier(), color=160)
+                        frontier.put(neighbor_path)
 
 def cost_guess(point_xy, stop_xy):
     '''
@@ -116,10 +122,16 @@ class PathNode():
         self.prev = prev
         self.xy = location
         self.endpoint = endpoint
-        self.length = prev.prev_dist() + 1 if prev != None else 1
+        self.length = (1 + prev.prev_dist()) if prev is not None else 1
 
     def __cmp__(self, other):
         return cmp(self.cost(), other.cost())
+
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
 
     def prev_dist(self):
         return self.length
@@ -149,7 +161,8 @@ class PathNode():
         x, y = self.frontier()
         ret = [] #list of index xy tuples beside the xy input
 
-        if x+1 < len_x: ret.append(PathNode((x+1, y), self.endpoint, prev=self))
+        up_x = PathNode((x+1, y), self.endpoint, prev=self)
+        if x+1 < len_x: ret.append(up_x)
         if x-1 >= 0: ret.append(PathNode((x-1, y), self.endpoint, prev=self))
         if x+1 < len_x: ret.append(PathNode((x, y+1), self.endpoint, prev=self))
         if x-1 >= 0: ret.append(PathNode((x, y-1), self.endpoint, prev=self))
