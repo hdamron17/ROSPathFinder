@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 
 import math
 import queue
+import copy
 
 
 EXPLORED = 254 #explored location
@@ -36,12 +37,15 @@ class PathFinder():
         self.display.set_data(self.display_im)
         plt.draw()
 
-    def put_point(self, xy, color=0):
+    def put_point(self, xy, color=0, width=4):
         '''
         Changes the pixel at a point
         '''
         #print("point %s" % (xy,)) #TODO remove
-        self.drawer.point(xy, color)
+        r = int(width/2)
+        x,y = xy
+        #self.drawer.point(xy, color)
+        self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
         self.update_display()
 
     def put_line(self, start_xy, stop_xy, color=0):
@@ -68,37 +72,130 @@ class PathFinder():
                 self.stop_xy = (x, y)
                 #TODO call finding algorithm to do the stuff with the data
                 print(self.findpath(self.start_xy, self.stop_xy))
-                self.put_line(self.start_xy, self.stop_xy) #TODO remove
+                #self.put_line(self.start_xy, self.stop_xy) #TODO remove
                 # print("Resetting") #TODO remove
 
                 self.start_xy = None
                 self.stop_xy = None
-
-    def cost_guess(self, point_xy, stop_xy):
-        '''
-        Makes a guess about how far the points are from each other (possibly using Manhattan distance)
-        '''
-        return abs(point_xy[0] - stop_xy[0]) + abs(point_xy[1] - stop_xy[1])
 
     def findpath(self, start_xy, stop_xy):
         '''
         Finds optimal path from start_xy to stop_xy
         '''
         frontier = queue.PriorityQueue()
+        for neighbor_path in Path([start_xy]).neighbors(self.im.size): frontier.put(neighbor_path)
+        print(frontier.qsize()) #TODO remove
 
-    def Path(list):
-        def __init__(self, start):
-            super.__init__()
-            self.append(start)
+        path = None
+        while path == None:
+            #loop until the ideal path is found -> path will become the Path object with shortest route
+            best = frontier.get()
+            self.put_point(best.frontier()) #TODO remove
 
-        def __cmp__(self, other):
-            return cmp(len(self), len(other))
+            if neighbor_path.frontier() == stop_xy:
+                path = best
+            else:
+                for neighbor_path in best.neighbors(self.im.size):
+                    frontier.put(neighbor_path)
 
-        def prev_dist(self):
-            return len(self)
+def cost_guess(point_xy, stop_xy):
+    '''
+    Makes a guess about how far the points are from each other (possibly using Manhattan distance)
+    '''
+    return abs(point_xy[0] - stop_xy[0]) + abs(point_xy[1] - stop_xy[1])
 
-        def future_guess(self):
-            return self.cost_guess(self[-1])
+def cmp(a, b):
+    '''
+    Compares two objects (resurrected from Python 2)
+    '''
+    return (a>b)-(a<b)
+
+class PathNode():
+    def __init__(self, location, endpoint, prev=None):
+        self.prev = prev
+        self.xy = location
+        self.endpoint = endpoint
+        self.length = prev.length() if prev != None else 0
+
+    def __cmp__(self, other):
+        return cmp(self.cost()
+
+    def prev_dist(self):
+        return self.length
+
+    def future_guess(self):
+        return cost_guess(self.xy, self.endpoint)
+
+    def cost(self):
+        self.prev_dist() + self.future_guess()
+
+    def frontier(self):
+        return self.xy
+
+    def self_test(self):
+        cmp = self.__cmp__(self)
+        prev = self.prev_dist()
+        future = self.future_guess()
+        cost = self.cost()
+        last = self.frontier()
+        return "%s %s %s %s %s" % (cmp, prev, future, cost, last)
+
+    def neighbors(self, shape):
+        '''
+        Gets a Path for all valid neighbors
+        '''
+        len_x, len_y = shape
+        x, y = self.frontier()
+        ret = [] #list of index xy tuples beside the xy input
+
+        if x+1 < len_x: ret.append(Path((x+1, y), self.endpoint, prev=self))
+        if x-1 >= 0: ret.append(Path((x-1, y), self.endpoint, prev=self))
+        if x+1 < len_x: ret.append(Path((x, y+1), self.endpoint, prev=self))
+        if x-1 >= 0: ret.append(Path((x, y-1), self.endpoint, prev=self))
+
+        return ret
+
+class Path(list):
+    def __init__(self, start):
+        self.extend(start)
+
+    def __cmp__(self, other):
+        return cmp(len(self), len(other))
+
+    def prev_dist(self):
+        return len(self)
+
+    def future_guess(self, endpoint):
+        return cost_guess(self[-1], endpoint)
+
+    def cost(self, endpoint):
+        return self.prev_dist() + self.future_guess(endpoint)
+
+    def frontier(self):
+        return self[-1]
+
+    def self_test(self, endpoint):
+        cmp = self.__cmp__(self)
+        prev = self.prev_dist()
+        future = self.future_guess(endpoint)
+        cost = self.cost(endpoint)
+        last = self.frontier()
+        return "%s %s %s %s %s" % (cmp, prev, future, cost, last)
+
+    def neighbors(self, shape):
+        '''
+        Gets a Path for all valid neighbors
+        '''
+        len_x, len_y = shape
+        x, y = self.frontier()
+        ret = [] #list of index xy tuples beside the xy input
+
+        if x+1 < len_x: ret.append(Path(self + [(x+1, y)]))
+        if x-1 >= 0: ret.append(Path(self + [(x-1, y)]))
+        if x+1 < len_x: ret.append(Path(self + [(x, y+1)]))
+        if x-1 >= 0: ret.append(Path(self + [(x, y-1)]))
+
+        return ret
 
 if __name__ == "__main__":
     PathFinder()
