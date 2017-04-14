@@ -86,9 +86,10 @@ class PathFinder():
         start = PathNode(start_xy, stop_xy)
         neighbors = start.neighbors(self.im.size)
         for neighbor_path in neighbors:
-            print("Putting %s" % (neighbor_path.frontier(),)) #TODO remove
-            frontier.put(neighbor_path)
-            print("Done")
+            if neighbor_path is not None:
+                print("Putting %s" % (neighbor_path.frontier(),)) #TODO remove
+                frontier.put(neighbor_path)
+                print("Done")
         print(frontier.qsize()) #TODO remove
 
         path = None
@@ -101,7 +102,7 @@ class PathFinder():
                 path = best
             else:
                 for neighbor_path in best.neighbors(self.im.size):
-                    if self.im[neighbor_path.frontier()] == EXPLORED:
+                    if neighbor_path is not None and self.im[neighbor_path.frontier()] == EXPLORED:
                         self.put_point(neighbor_path.frontier(), color=160)
                         frontier.put(neighbor_path)
 
