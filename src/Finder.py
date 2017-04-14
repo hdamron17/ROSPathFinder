@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 
 import math
 from heapq import *
-import copy
+import threading
 
 
 EXPLORED = 254 #explored location
@@ -24,6 +24,7 @@ class PathFinder():
         '''
         self.start_xy = None #point to start on
         self.stop_xy = None #point to end on
+        self.threads = []
 
         self.im = Image.open("maps/map.png").convert("I")
         self.display_im = self.im.copy()
@@ -76,15 +77,28 @@ class PathFinder():
 
             elif self.stop_xy == None:
                 self.stop_xy = (x, y)
-                #TODO call finding algorithm to do the stuff with the data
-                path, explored = self.findpath(self.start_xy, self.stop_xy)
 
-                #display explored locations in grey and path in black
-                self.put_points(explored, color=230)
-                self.put_points(path)
+                thread = threading.Thread(target=self.drawpath)
+                thread.setDaemon(True)
+                thread.start()
+                self.threads.append(thread)
 
                 self.start_xy = None
                 self.stop_xy = None
+
+    def drawpath(self):
+        '''
+        Calculates path based on and draws it on the map
+        '''
+        if self.start_xy is None or self.stop_xy is None:
+            #if either is not ready, just stop
+            return
+        #TODO call finding algorithm to do the stuff with the data
+        path, explored = self.findpath(self.start_xy, self.stop_xy)
+
+        #display explored locations in grey and path in black
+        self.put_points(explored, color=230)
+        self.put_points(path)
 
     def findpath(self, start_xy, stop_xy):
         '''
