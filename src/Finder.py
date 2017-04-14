@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
 import math
-import queue
+from heapq import *
 import copy
 
 
@@ -71,9 +71,9 @@ class PathFinder():
             elif self.stop_xy == None:
                 self.stop_xy = (x, y)
                 #TODO call finding algorithm to do the stuff with the data
-                print(self.findpath(self.start_xy, self.stop_xy))
-                #self.put_line(self.start_xy, self.stop_xy) #TODO remove
-                # print("Resetting") #TODO remove
+                path = self.findpath(self.start_xy, self.stop_xy)
+                for point in path:
+                    self.put_point(point)
 
                 self.start_xy = None
                 self.stop_xy = None
@@ -82,29 +82,38 @@ class PathFinder():
         '''
         Finds optimal path from start_xy to stop_xy
         '''
-        frontier = queue.PriorityQueue()
+        frontier = [] #TODO may need to be heapified
         start = PathNode(start_xy, stop_xy)
         neighbors = start.neighbors(self.im.size)
         for neighbor_path in neighbors:
             if neighbor_path is not None:
-                print("Putting %s" % (neighbor_path.frontier(),)) #TODO remove
-                frontier.put(neighbor_path)
-                print("Done")
-        print(frontier.qsize()) #TODO remove
+                heappush(frontier, neighbor_path)
 
         path = None
-        while path == None:
+        while path is None:
             #loop until the ideal path is found -> path will become the Path object with shortest route
-            best = frontier.get()
-            self.put_point(best.frontier()) #TODO remove
+            best = heappop(frontier)
 
-            if neighbor_path.frontier() == stop_xy:
+            if best.frontier() == stop_xy:
                 path = best
             else:
                 for neighbor_path in best.neighbors(self.im.size):
-                    if neighbor_path is not None and self.im[neighbor_path.frontier()] == EXPLORED:
-                        self.put_point(neighbor_path.frontier(), color=160)
-                        frontier.put(neighbor_path)
+                    if neighbor_path is not None and self.im.getpixel(neighbor_path.frontier()) == EXPLORED and neighbor_path.frontier() not in map(lambda node: node.frontier(), frontier):
+                        self.put_point(neighbor_path.frontier(), color=210)
+                        heappush(frontier, neighbor_path)
+
+        return path_list(path)
+
+def path_list(path):
+    '''
+    Converts Path object to list of tuple xy points
+    '''
+    node = path
+    nodes = []
+    while node is not None:
+        nodes.append(node.frontier())
+        node = node.get_prev()
+    return nodes
 
 def cost_guess(point_xy, stop_xy):
     '''
@@ -134,6 +143,9 @@ class PathNode():
     def __eq__(self, other):
         return self.__cmp__(other) == 0
 
+    def get_prev(self):
+        return self.prev
+
     def prev_dist(self):
         return self.length
 
@@ -141,7 +153,7 @@ class PathNode():
         return cost_guess(self.xy, self.endpoint)
 
     def cost(self):
-        self.prev_dist() + self.future_guess()
+        return self.prev_dist() + self.future_guess()
 
     def frontier(self):
         return self.xy
