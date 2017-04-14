@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 import math
 from heapq import *
 import threading
+import sys
 
 
 EXPLORED = 254 #explored location
@@ -78,7 +79,7 @@ class PathFinder():
             elif self.stop_xy == None:
                 self.stop_xy = (x, y)
 
-                thread = threading.Thread(target=self.drawpath)
+                thread = threading.Thread(target=self.drawpath, args=(("early_show" in sys.argv),))
                 thread.setDaemon(True)
                 thread.start()
                 self.threads.append(thread)
@@ -86,7 +87,7 @@ class PathFinder():
                 self.start_xy = None
                 self.stop_xy = None
 
-    def drawpath(self):
+    def drawpath(self, early_show=False):
         '''
         Calculates path based on and draws it on the map
         '''
@@ -94,13 +95,15 @@ class PathFinder():
             #if either is not ready, just stop
             return
         #TODO call finding algorithm to do the stuff with the data
-        path, explored = self.findpath(self.start_xy, self.stop_xy)
+        path, explored = self.findpath(self.start_xy, self.stop_xy, early_show)
 
         #display explored locations in grey and path in black
-        self.put_points(explored, color=230)
+        if not early_show:
+            self.put_points(explored, color=230)
         self.put_points(path)
+        self.update_display()
 
-    def findpath(self, start_xy, stop_xy):
+    def findpath(self, start_xy, stop_xy, show=False):
         '''
         Finds optimal path from start_xy to stop_xy
         '''
@@ -124,6 +127,8 @@ class PathFinder():
                     if neighbor_path is not None and self.im.getpixel(neighbor_path.frontier()) == EXPLORED and neighbor_path.frontier() not in map(lambda node: node.frontier(), frontier):
                         explored.add(neighbor_path.frontier())
                         heappush(frontier, neighbor_path)
+                        if show:
+                            self.put_point(neighbor_path.frontier(), color=230)
 
         return path_list(path), list(set(explored))
 
