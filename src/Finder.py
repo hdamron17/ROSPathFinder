@@ -101,7 +101,6 @@ class PathFinder():
         if not early_show:
             self.put_points(explored, color=230)
         self.put_points(path)
-        self.update_display()
 
     def findpath(self, start_xy, stop_xy, show=False):
         '''
