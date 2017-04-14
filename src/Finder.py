@@ -30,6 +30,7 @@ class PathFinder():
         self.drawer = ImageDraw.Draw(self.display_im)
 
         self.display = plt.imshow(self.display_im)
+        plt.title("Path Finding A* Algorithm In a Map\n(Click 2 Points and Wait)")
         self.display.figure.canvas.mpl_connect('button_press_event', self.onclick)
         plt.show()
 
@@ -44,8 +45,13 @@ class PathFinder():
         #print("point %s" % (xy,)) #TODO remove
         r = int(width/2)
         x,y = xy
-        #self.drawer.point(xy, color)
         self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
+        self.update_display()
+
+    def put_points(self, xy_points, color=0, width=4):
+        r = int(width/2)
+        for x,y in xy_points:
+            self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
         self.update_display()
 
     def put_line(self, start_xy, stop_xy, color=0):
@@ -71,9 +77,11 @@ class PathFinder():
             elif self.stop_xy == None:
                 self.stop_xy = (x, y)
                 #TODO call finding algorithm to do the stuff with the data
-                path = self.findpath(self.start_xy, self.stop_xy)
-                for point in path:
-                    self.put_point(point)
+                path, explored = self.findpath(self.start_xy, self.stop_xy)
+
+                #display explored locations in grey and path in black
+                self.put_points(explored, color=230)
+                self.put_points(path)
 
                 self.start_xy = None
                 self.stop_xy = None
@@ -83,6 +91,7 @@ class PathFinder():
         Finds optimal path from start_xy to stop_xy
         '''
         frontier = [] #TODO may need to be heapified
+        explored = set()
         start = PathNode(start_xy, stop_xy)
         neighbors = start.neighbors(self.im.size)
         for neighbor_path in neighbors:
@@ -99,10 +108,10 @@ class PathFinder():
             else:
                 for neighbor_path in best.neighbors(self.im.size):
                     if neighbor_path is not None and self.im.getpixel(neighbor_path.frontier()) == EXPLORED and neighbor_path.frontier() not in map(lambda node: node.frontier(), frontier):
-                        self.put_point(neighbor_path.frontier(), color=210)
+                        explored.add(neighbor_path.frontier())
                         heappush(frontier, neighbor_path)
 
-        return path_list(path)
+        return path_list(path), list(set(explored))
 
 def path_list(path):
     '''
