@@ -74,6 +74,8 @@ class PathFinder():
         '''
         When the user clicks a location on the map, it sets that point as an endpoint and draws path if it is second point
         '''
+        if event.xdata is None or event.ydata is None:
+            return #keep those NoneTypes out of our side of the village
         x = int(round(event.xdata))
         y = int(round(event.ydata))
         if x != None and y != None and self.im.getpixel((x,y)) == EXPLORED:
