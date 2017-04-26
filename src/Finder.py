@@ -4,15 +4,17 @@
 Loads map image file then uses A* to find shortest path
 '''
 
-import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
-import math
-from heapq import *
+from heapq import heappop, heappush
 import threading
 import sys
 
+from os.path import join as pathjoin, abspath, dirname
+
+
+PROJECT_ROOT = pathjoin(dirname(abspath(sys.argv[0])), "..")
 
 EXPLORED = 254 #explored location
 UNEXPLORED = 205 #unexplored location
@@ -27,7 +29,7 @@ class PathFinder():
         self.stop_xy = None #point to end on
         self.threads = []
 
-        self.im = Image.open("maps/map.png").convert("I")
+        self.im = Image.open(pathjoin(PROJECT_ROOT, "maps", "map.png")).convert("I")
         self.display_im = self.im.copy()
         self.drawer = ImageDraw.Draw(self.display_im)
 
@@ -37,6 +39,9 @@ class PathFinder():
         plt.show()
 
     def update_display(self):
+        '''
+        Updates the display with new image
+        '''
         self.display.set_data(self.display_im)
         plt.draw()
 
@@ -44,13 +49,15 @@ class PathFinder():
         '''
         Changes the pixel at a point
         '''
-        #print("point %s" % (xy,)) #TODO remove
         r = int(width/2)
         x,y = xy
         self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
         self.update_display()
 
     def put_points(self, xy_points, color=0, width=4):
+        '''
+        Puts points on display and updates
+        '''
         r = int(width/2)
         for x,y in xy_points:
             self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
@@ -60,21 +67,19 @@ class PathFinder():
         '''
         Draws a straight line on the map from one point to another
         '''
-        #print("line from %s to %s" % (start_xy, stop_xy)) #TODO remove
         self.drawer.line([start_xy, stop_xy], width=10)
         self.update_display()
 
     def onclick(self, event):
         '''
-        When the user clicks a location on the map, it sets that point as endpoint
+        When the user clicks a location on the map, it sets that point as an endpoint and draws path if it is second point
         '''
         x = int(round(event.xdata))
         y = int(round(event.ydata))
         if x != None and y != None and self.im.getpixel((x,y)) == EXPLORED:
-            #print("Clicked (%s,%s) -> %s, start: %s, stop: %s" % (x,y, self.im.getpixel((x,y)), self.start_xy, self.stop_xy)) #TODO remove
             if self.start_xy == None:
                 self.start_xy = (x, y)
-                self.put_point(self.start_xy)
+                self.put_point(self.start_xy, width=1)
 
             elif self.stop_xy == None:
                 self.stop_xy = (x, y)
@@ -94,19 +99,19 @@ class PathFinder():
         if self.start_xy is None or self.stop_xy is None:
             #if either is not ready, just stop
             return
-        #TODO call finding algorithm to do the stuff with the data
         path, explored = self.findpath(self.start_xy, self.stop_xy, early_show)
 
         #display explored locations in grey and path in black
         if not early_show:
-            self.put_points(explored, color=230)
-        self.put_points(path)
+            self.put_points(explored, color=230, width=1)
+        self.put_points(path, width=1)
+        self.update_display()
 
     def findpath(self, start_xy, stop_xy, show=False):
         '''
         Finds optimal path from start_xy to stop_xy
         '''
-        frontier = [] #TODO may need to be heapified
+        frontier = []
         explored = set()
         start = PathNode(start_xy, stop_xy)
         neighbors = start.neighbors(self.im.size)
@@ -209,7 +214,7 @@ class PathNode():
 
         return ret
 
-class Path(list):
+class Path():
     def __init__(self, start):
         self.extend(start)
 
