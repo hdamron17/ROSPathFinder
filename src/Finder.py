@@ -44,6 +44,7 @@ class PathFinder():
         '''
         self.display.set_data(self.display_im)
         plt.draw()
+        plt.pause(0.001)
 
     def put_point(self, xy, color=0, width=4):
         '''
