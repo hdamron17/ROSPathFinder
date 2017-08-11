@@ -24,7 +24,8 @@ class FixedFinder(PathFinder):
         raw_costs = {start_xy : 0} #dictionary of elements to their raw costs (excluding heuristic)
         frontier = [(cost_guess(start_xy, stop_xy), start_xy)] #list will be used as heap to get closest in priority queue (cost, index)
         start_time = time.time()
-        
+        loop_num = 0
+
         while True:   
             ### HAHA, seemingly infinite loop
             if len(frontier) <= 0:
@@ -47,9 +48,14 @@ class FixedFinder(PathFinder):
                     raw_cost = best_cost + 1 #add one to cost
                     raw_costs[neighbor] = raw_cost
                     heappush(frontier, (raw_cost + diagonal_cost_guess(neighbor, stop_xy), neighbor))
-                    
-                    if show:
-                        self.put_point(neighbor, color=230)
+
+                    if show or self.save:
+                        self.put_point(neighbor, color=230, update=False)
+
+                        if show:
+                            self.update_display()
+                        if self.save:
+                            self.save_map("%s.png" % loop_num)
                     
             for neighbor in self.diagonal_neighors(best):
                 #all diagonal neighbors
@@ -59,10 +65,17 @@ class FixedFinder(PathFinder):
                     raw_cost = best_cost + SQRT2 #add one to cost
                     raw_costs[neighbor] = raw_cost
                     heappush(frontier, (raw_cost + diagonal_cost_guess(neighbor, stop_xy), neighbor))
-                    
-                    if show:
-                        self.put_point(neighbor, color=230)
-    
+
+                    if show or self.save:
+                        self.put_point(neighbor, color=230, update=False)
+
+                        if show:
+                            self.update_display()
+                        if self.save:
+                            self.save_map("%s.png" % loop_num)
+
+            loop_num += 1
+
     def neighbors(self, loc):
         '''
         Finds all valid direct neighbors of loc (not diagonal)

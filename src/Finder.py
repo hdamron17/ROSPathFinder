@@ -11,7 +11,9 @@ from heapq import heappop, heappush
 import threading
 import sys
 
-from os.path import join as pathjoin, abspath, dirname
+from os.path import join as pathjoin, abspath, dirname, exists
+from os import makedirs
+from shutil import rmtree
 
 
 PROJECT_ROOT = pathjoin(dirname(abspath(sys.argv[0])), "..")
@@ -25,6 +27,14 @@ class PathFinder():
         '''
         Creates PathFinder object, loads and displays map
         '''
+        self.save = len(sys.argv) > 0 and "save" in sys.argv[1:]
+        self.output_dir = pathjoin(PROJECT_ROOT, "output")
+
+        if exists(self.output_dir):
+            rmtree(self.output_dir)
+        makedirs(self.output_dir)
+
+
         self.start_xy = None #point to start on
         self.stop_xy = None #point to end on
         self.threads = []
@@ -38,6 +48,14 @@ class PathFinder():
         self.display.figure.canvas.mpl_connect('button_press_event', self.onclick)
         plt.show()
 
+    def save_map(self, name):
+        '''
+        Saves the current screen in the output folder with specific name
+        :param name: name to use to save image
+        '''
+        name = str(name)
+        plt.imsave(pathjoin(self.output_dir, name), self.display_im, cmap="gray")
+
     def update_display(self):
         '''
         Updates the display with new image
@@ -46,30 +64,33 @@ class PathFinder():
         plt.draw()
         plt.pause(0.001)
 
-    def put_point(self, xy, color=0, width=4):
+    def put_point(self, xy, color=0, width=4, update=True):
         '''
         Changes the pixel at a point
         '''
         r = int(width/2)
         x,y = xy
         self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
-        self.update_display()
+        if update:
+            self.update_display()
 
-    def put_points(self, xy_points, color=0, width=4):
+    def put_points(self, xy_points, color=0, width=4, update=True):
         '''
         Puts points on display and updates
         '''
         r = int(width/2)
         for x,y in xy_points:
             self.drawer.ellipse((x-r, y-r, x+r, y+r), fill=color)
-        self.update_display()
+        if update:
+            self.update_display()
 
-    def put_line(self, start_xy, stop_xy, color=0):
+    def put_line(self, start_xy, stop_xy, color=0, update=True):
         '''
         Draws a straight line on the map from one point to another
         '''
         self.drawer.line([start_xy, stop_xy], width=10)
-        self.update_display()
+        if update:
+            self.update_display()
 
     def onclick(self, event):
         '''
@@ -108,7 +129,8 @@ class PathFinder():
         if not early_show:
             self.put_points(explored, color=230, width=1)
         self.put_points(path, width=1)
-        self.update_display()
+        if self.save:
+            self.save_map("final.png")
 
     def findpath(self, start_xy, stop_xy, show=False):
         '''
